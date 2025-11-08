@@ -1,0 +1,14 @@
+{
+  "name": "netlify-key-system",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "echo build",
+    "start": "netlify dev"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.7",
+    "pg": "^8.11.0",
+    "uuid": "^9.0.0"
+  }
+}

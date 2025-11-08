@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = "public"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+[dev]
+  command = "netlify dev"
+
+[functions.create-key]
+  schedule = "@daily"
