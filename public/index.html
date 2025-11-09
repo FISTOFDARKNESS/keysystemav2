@@ -76,9 +76,6 @@
 </div>
 
 <script>
-
-const ADMIN_SECRET = '1234';
-
 async function loadKey() {
   const res = await fetch('https://keysystembeta.netlify.app/.netlify/functions/get-current-key');
   if (!res.ok) {
@@ -107,7 +104,7 @@ document.getElementById('get').addEventListener('click', async () => {
   try {
     const res = await fetch(`${apiBase}/create-key`, {
       method: 'POST',
-      headers: { 'x-admin-secret': ADMIN_SECRET }
+      headers: { 'x-admin-secret': 1234 }
     });
     const j = await res.json();
     if (!j.success) {
