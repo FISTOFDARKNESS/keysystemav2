@@ -52,14 +52,18 @@ document.getElementById('get').addEventListener('click', async () => {
   try {
     const res = await fetch(`${SITE_URL}/.netlify/functions/create-key`, {
       method: 'POST',
-      headers: { 'x-admin-secret': 1234 }
+      headers: { 'x-admin-secret': ADMIN_SECRET }
     });
     const j = await res.json();
     if (!j.success) return alert('Não foi possível gerar a key: ' + j.message);
     document.getElementById('key').textContent = j.key;
     document.getElementById('info').textContent = 'Expira em: ' + new Date(j.expires_at).toLocaleString();
+
+    window.open(`${SITE_URL}/.netlify/functions/verify-workink?token=${encodeURIComponent(j.key)}`, '_blank');
+
   } catch (e) {
     alert('Erro ao gerar key');
+    console.error(e);
   }
 });
 
