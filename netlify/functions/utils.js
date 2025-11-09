@@ -36,4 +36,31 @@ function classifyByIspAsn(isp, asn) {
   return "residential";
 }
 
-module.exports = { getClientIp, enrichIp, sign, verify, classifyByIspAsn };
+function createViewToken(key, ttlSeconds) {
+  const expires = Date.now() + (ttlSeconds * 1000);
+  const payload = `${key}|${expires}`;
+  const b64 = Buffer.from(payload).toString("base64url");
+  const mac = crypto.createHmac("sha256", secret).update(b64).digest("hex");
+  return `${b64}.${mac}`;
+}
+
+function verifyViewToken(token) {
+  if (!token || !token.includes(".")) return null;
+  const [b64, mac] = token.split(".");
+  const expected = crypto.createHmac("sha256", secret).update(b64).digest("hex");
+  if (expected !== mac) return null;
+  let payload;
+  try {
+    payload = Buffer.from(b64, "base64url").toString("utf8");
+  } catch (e) {
+    return null;
+  }
+  const parts = payload.split("|");
+  if (parts.length !== 2) return null;
+  const key = parts[0];
+  const expires = parseInt(parts[1], 10);
+  if (Date.now() > expires) return null;
+  return { key, expires };
+}
+
+module.exports = { getClientIp, enrichIp, sign, verify, classifyByIspAsn, createViewToken, verifyViewToken };
