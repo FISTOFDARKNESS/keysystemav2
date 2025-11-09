@@ -17,9 +17,10 @@ async function loadKey(){
   const visitor=getLocalVisitor()
   const headers=visitor?{'x-visitor-id':visitor}:{}
   const res=await fetch("/.netlify/functions/get-or-create-key",{method:"GET",headers,credentials:"include"})
+  if(!res.ok)return
   const j=await res.json()
   if(j.visitor_id)setLocalVisitor(j.visitor_id)
-  if(j.key)location.href="/id/"+j.key
+  if(j.public_slug)location.href="/id/"+encodeURIComponent(j.public_slug)
 }
 loadKey()
 </script>
