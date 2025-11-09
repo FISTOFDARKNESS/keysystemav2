@@ -18,7 +18,7 @@ exports.handler = async (event) => {
 
   if (!r.rows.length) {
     await client.end();
-    return { statusCode: 404, body: "get tje key again in the executor" };
+    return { statusCode: 404, body: "get the key again in the executor" };
   }
 
   const row = r.rows[0];
