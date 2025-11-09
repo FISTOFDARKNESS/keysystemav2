@@ -4,10 +4,8 @@ const secret = "qualquerCoisaAqui123";
 
 function getClientIp(headers) {
   if (!headers) return "0.0.0.0";
-
   const xfwd = headers["x-forwarded-for"] || headers["X-Forwarded-For"] || null;
   if (xfwd && typeof xfwd === "string") return xfwd.split(",")[0].trim();
-
   return headers["client-ip"] || headers["remote-addr"] || "0.0.0.0";
 }
 
@@ -34,7 +32,7 @@ function verify(v) {
 
 function classifyByIspAsn(isp, asn) {
   if (isp && isp.toLowerCase().includes("aws")) return "datacenter";
-  if (asn && asn.toLowerCase().includes("amazon")) return "datacenter";
+  if (asn && typeof asn === "string" && asn.toLowerCase().includes("amazon")) return "datacenter";
   return "residential";
 }
 
