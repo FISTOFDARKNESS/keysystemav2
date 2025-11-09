@@ -14,7 +14,7 @@ exports.handler = async function(event) {
     const result = await db.query("SELECT token, expires_at FROM keys WHERE token=$1", [token]);
     if (!result.rows.length) {
       await db.end();
-      return { statusCode: 404, headers: { "Content-Type": "text/html" }, body: "<h1>Key não existe.</h1>" };
+      return { statusCode: 404, headers: { "Content-Type": "text/html" }, body: "<h1>get the key again</h1>" };
     }
 
     const key = result.rows[0];
@@ -23,7 +23,7 @@ exports.handler = async function(event) {
     if (expired) {
       await db.query("DELETE FROM keys WHERE token=$1", [token]);
       await db.end();
-      return { statusCode: 410, headers: { "Content-Type": "text/html" }, body: "<h1>Key expirada.</h1>" };
+      return { statusCode: 410, headers: { "Content-Type": "text/html" }, body: "<h1>get the key again.</h1>" };
     }
 
     await db.end();
