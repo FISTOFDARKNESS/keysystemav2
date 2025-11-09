@@ -5,7 +5,7 @@ exports.handler = async (event) => {
   if (!slug && event.path) {
     slug = decodeURIComponent(event.path.split("/id/")[1] || "");
   }
-  if (!slug) return { statusCode: 404, body: "Key não existe." };
+  if (!slug) return { statusCode: 404, body: "get the key again in the executor." };
 
   const client = new Client({
     connectionString: "postgresql://neondb_owner:npg_RVcjEu4DI3mJ@ep-dawn-tree-ad1airj2-pooler.c-2.us-east-1.aws.neon.tech/KeySytem?sslmode=require&channel_binding=require",
@@ -18,7 +18,7 @@ exports.handler = async (event) => {
 
   if (!r.rows.length) {
     await client.end();
-    return { statusCode: 404, body: "Key não existe." };
+    return { statusCode: 404, body: "get tje key again in the executor" };
   }
 
   const row = r.rows[0];
@@ -27,7 +27,7 @@ exports.handler = async (event) => {
   if (expired) {
     await client.query("DELETE FROM keys WHERE public_slug=$1", [slug]);
     await client.end();
-    return { statusCode: 410, body: "Key expirada." };
+    return { statusCode: 410, body: "get the key again in the executor" };
   }
 
   await client.end();
@@ -51,7 +51,7 @@ exports.handler = async (event) => {
       </head>
       <body>
         <div class="box">
-          <h2>KEY VÁLIDA</h2>
+          <h2>VALID KEY</h2>
           <div class="key">${row.token}</div>
           <small>Expira em: ${new Date(row.expires_at).toLocaleString()}</small>
         </div>
