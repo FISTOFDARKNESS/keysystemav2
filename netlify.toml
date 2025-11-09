@@ -6,5 +6,10 @@
   node_bundler = "esbuild"
   external_node_modules = ["pg", "uuid"]
 
+[[redirects]]
+  from = "/id/:key"
+  to = "/.netlify/functions/key-view?key=:key"
+  status = 200
+
 [functions."cleanup-expired"]
   schedule = "0 * * * *"
