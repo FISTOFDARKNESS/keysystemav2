@@ -1,10 +1,9 @@
 const { getClient } = require("./_db");
-const { getClientIp, enrichIp, sign, verify, classifyByIspAsn, createViewToken } = require("./utils");
+const { getClientIp, enrichIp, sign, verify, classifyByIspAsn } = require("./utils");
 const { v4: uuidv4 } = require("uuid");
 
 const KEY_TTL_HOURS = 24;
-const RATE_LIMIT_PER_IP_24H = 5;
-const VIEW_TOKEN_TTL_SECONDS = 10;
+const RATE_LIMIT_PER_IP_24H = 2;
 
 function parseCookies(cookieHeader) {
   if (!cookieHeader) return {};
@@ -62,29 +61,8 @@ exports.handler = async function(event) {
     const now = new Date().toISOString();
     const existing = await db.query("SELECT token, expires_at FROM keys WHERE owner_id=$1 AND expires_at>$2 ORDER BY created_at DESC LIMIT 1", [visitorId, now]);
     if (existing.rows.length) {
-      const token = existing.rows[0].token;
-      const viewToken = createViewToken(token, VIEW_TOKEN_TTL_SECONDS);
       await db.end();
       return {
         statusCode: 200,
-        headers: { "Set-Cookie": [`visitor_id=${visitorCookie}; Path=/; Max-Age=31536000; SameSite=Lax`, `allow_view=${viewToken}; Path=/; Max-Age=${VIEW_TOKEN_TTL_SECONDS}; SameSite=Lax`] },
-        body: JSON.stringify({ success: true, visitor_id: visitorId, key: token, expires_at: existing.rows[0].expires_at })
-      };
-    }
-
-    const token = uuidv4();
-    const expiresAt = new Date(Date.now() + KEY_TTL_HOURS * 60 * 60 * 1000).toISOString();
-    await db.query("INSERT INTO keys(token, owner_id, created_at, expires_at, issued_from_ip) VALUES($1,$2,NOW(),$3,$4)", [token, visitorId, expiresAt, clientIp]);
-
-    const viewToken = createViewToken(token, VIEW_TOKEN_TTL_SECONDS);
-    await db.end();
-    return {
-      statusCode: 200,
-      headers: { "Set-Cookie": [`visitor_id=${visitorCookie}; Path=/; Max-Age=31536000; SameSite=Lax`, `allow_view=${viewToken}; Path=/; Max-Age=${VIEW_TOKEN_TTL_SECONDS}; SameSite=Lax`] },
-      body: JSON.stringify({ success: true, visitor_id: visitorId, key: token, expires_at: expiresAt })
-    };
-  } catch (e) {
-    await db.end();
-    return { statusCode: 500, body: JSON.stringify({ success: false, error: e.message }) };
-  }
-};
+        headers: { "Set-Cookie": "visitor_id=" + visitorCookie + "; Path=/; Max-Age=31536000; SameSite=Lax" },
+        body: JSON.stringify({ success: true
