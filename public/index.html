@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Key Panel!</title>
+<title>Key Panel</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
   body {
@@ -76,25 +76,30 @@
 </div>
 
 <script>
-const apiBase = '/.netlify/functions';
-const ADMIN_SECRET = '1234'; // substitua pelo seu CREATE_KEY_ADMIN_SECRET
+
+const ADMIN_SECRET = '1234';
 
 async function loadKey() {
-  document.getElementById('info').textContent = '';
-  try {
-    const res = await fetch(`${apiBase}/get-current-key`);
-    if (!res.ok) { 
-      document.getElementById('key').textContent = 'Sem key ativa'; 
-      return; 
-    }
-    const j = await res.json();
-    document.getElementById('key').textContent = j.key;
-    document.getElementById('info').textContent = 'Expira em: ' + new Date(j.expires_at).toLocaleString();
-  } catch(e) {
-    document.getElementById('key').textContent = 'Erro ao carregar key';
-    console.error(e);
+  const res = await fetch('https://keysystembeta.netlify.app/.netlify/functions/get-current-key');
+  if (!res.ok) {
+    document.getElementById('key').textContent = 'Sem key ativa';
+    return;
   }
+  const j = await res.json();
+  document.getElementById('key').textContent = j.key;
+  document.getElementById('info').textContent = 'Expira em: ' + new Date(j.expires_at).toLocaleString();
 }
+
+document.getElementById('get').addEventListener('click', async () => {
+  const res = await fetch('https://keysystembeta.netlify.app/.netlify/functions/create-key', {
+    method: 'POST',
+    headers: { 'x-admin-secret': '1234' }
+  });
+  const j = await res.json();
+  if (!j.success) return alert('Não foi possível gerar a key: ' + j.message);
+  document.getElementById('key').textContent = j.key;
+  document.getElementById('info').textContent = 'Expira em: ' + new Date(j.expires_at).toLocaleString();
+});
 
 document.getElementById('refresh').addEventListener('click', loadKey);
 
