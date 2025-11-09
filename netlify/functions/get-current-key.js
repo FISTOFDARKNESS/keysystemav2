@@ -1,41 +1,33 @@
-const { getClient } = require('./_db');
-const { v4: uuidv4 } = require('uuid');
-
-const ADMIN_SECRET = process.env.CREATE_KEY_ADMIN_SECRET || null;
-const TTL_HOURS = parseInt(process.env.KEY_TTL_HOURS || '24', 10);
+const { getClient } = require("./_db");
 
 exports.handler = async function(event) {
-  if (ADMIN_SECRET) {
-    const auth = (event.headers && (event.headers['x-admin-secret'] || event.headers['X-Admin-Secret'])) || null;
-    if (auth !== ADMIN_SECRET) return {
-      statusCode: 401,
-      body: JSON.stringify({ success: false, message: 'unauthorized' })
-    };
-  }
-
   const client = getClient();
   await client.connect();
 
-  const token = uuidv4();
-  const createdAt = new Date();
-  const expiresAt = new Date(createdAt.getTime() + TTL_HOURS * 60 * 60 * 1000);
-
+  const now = new Date().toISOString();
   const q = `
-    INSERT INTO keys (token, created_at, expires_at)
-    VALUES ($1, $2, $3)
-    RETURNING token, created_at, expires_at
+    SELECT token, created_at, expires_at
+    FROM keys
+    WHERE expires_at > $1
+    ORDER BY created_at DESC
+    LIMIT 1
   `;
-  const r = await client.query(q, [token, createdAt.toISOString(), expiresAt.toISOString()]);
-
+  const res = await client.query(q, [now]);
   await client.end();
+
+  if (!res.rows.length) {
+    return {
+      statusCode: 404,
+      body: JSON.stringify({ success: false, message: "No active key" }),
+    };
+  }
 
   return {
     statusCode: 200,
     body: JSON.stringify({
       success: true,
-      key: r.rows[0].token,
-      created_at: r.rows[0].created_at,
-      expires_at: r.rows[0].expires_at
-    })
+      key: res.rows[0].token,
+      expires_at: res.rows[0].expires_at,
+    }),
   };
 };
