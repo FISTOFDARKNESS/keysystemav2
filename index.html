@@ -17,24 +17,33 @@ small{color:#9fb6c9;display:block;margin-top:8px}
 </head>
 <body>
 <div class="card">
-<h1>Painel Key</h1>
-<div id="key" class="key">Carregando...</div>
-<div class="row">
-<button id="refresh">Atualizar</button>
-</div>
-<small id="info"></small>
+  <h1>Painel Key</h1>
+  <div id="key" class="key">Carregando...</div>
+  <div class="row">
+    <button id="refresh">Atualizar</button>
+  </div>
+  <small id="info"></small>
 </div>
 <script>
-async function loadKey() {
-  const res = await fetch("/.netlify/functions/get-or-create-key");
-  const keyDiv = document.getElementById("key");
-  const info = document.getElementById("info");
-  if(!res.ok){ keyDiv.textContent="Sem key ativa"; return; }
-  const j = await res.json();
-  keyDiv.textContent = j.key;
-  info.textContent = "Expira em: "+new Date(j.expires_at).toLocaleString();
+const SITE_URL = window.location.origin;
+function getLocalVisitor() { return localStorage.getItem('visitor_id') || null; }
+function setLocalVisitor(v) { if (v) localStorage.setItem('visitor_id', v); }
+async function loadKey(){
+  const visitor = getLocalVisitor();
+  const headers = visitor ? { 'x-visitor-id': visitor } : {};
+  try {
+    const res = await fetch(SITE_URL + '/.netlify/functions/get-or-create-key', { method:'GET', headers, credentials: 'include' });
+    if (!res.ok) { document.getElementById('key').textContent = 'Sem key ativa'; return; }
+    const j = await res.json();
+    if (j.visitor_id) setLocalVisitor(j.visitor_id);
+    document.getElementById('key').textContent = j.key;
+    document.getElementById('info').textContent = 'Expira em: ' + new Date(j.expires_at).toLocaleString();
+  } catch(e) {
+    document.getElementById('key').textContent = 'Erro';
+    console.error(e);
+  }
 }
-document.getElementById("refresh").addEventListener("click",loadKey);
+document.getElementById('refresh').addEventListener('click', loadKey);
 loadKey();
 </script>
 </body>
