@@ -1,102 +1,90 @@
-const { getClient } = require('./_db');
-const { getClientIp, enrichIp, classifyByIspAsn, genVisitorId } = require('./utils');
-const { v4: uuidv4 } = require('uuid');
+// get-or-create-key.js (sem process.env)
+const { getClient } = require("./_db");
+const { getClientIp, enrichIp, classifyByIspAsn, signVisitorId, verifyVisitorCookie } = require("./utils");
+const { v4: uuidv4 } = require("uuid");
 
-const TTL_HOURS = parseInt(process.env.KEY_TTL_HOURS || '24', 10);
-const RATE_LIMIT_PER_IP_24H = parseInt(process.env.RATE_LIMIT_PER_IP_24H || '5', 10);
+const KEY_TTL_HOURS = 24;
+const RATE_LIMIT_PER_IP_24H = 5;
+const RATE_LIMIT_PER_VISITOR_24H = 1;
 
 function parseCookies(header) {
   if (!header) return {};
-  return header.split(';').map(s=>s.trim()).reduce((acc, pair) => {
-    const idx = pair.indexOf('=');
-    if (idx === -1) return acc;
-    const k = pair.slice(0, idx);
-    const v = pair.slice(idx+1);
-    acc[k] = v;
-    return acc;
-  }, {});
+  return Object.fromEntries(
+    header.split(";").map((c) => {
+      const [k, v] = c.trim().split("=");
+      return [k, decodeURIComponent(v)];
+    })
+  );
 }
 
-exports.handler = async function(event) {
+exports.handler = async function (event) {
   const headers = event.headers || {};
-  const cookieHeader = headers.cookie || headers.Cookie || '';
-  const cookies = parseCookies(cookieHeader);
-  let visitorId = (event.queryStringParameters && event.queryStringParameters.visitor_id) || headers['x-visitor-id'] || cookies['visitor_id'] || null;
+  const cookies = parseCookies(headers.cookie || headers.Cookie);
 
-  const clientIp = getClientIp(headers) || '0.0.0.0';
+  let signedVisitor = cookies["visitor_id"] || null;
+  let visitorId = verifyVisitorCookie(signedVisitor);
+
+  if (!visitorId) {
+    visitorId = uuidv4();
+    signedVisitor = signVisitorId(visitorId);
+  }
+
+  const clientIp = getClientIp(headers);
   const geo = await enrichIp(clientIp);
-  const isp = geo?.org || geo?.org_name || null;
-  const asn = geo?.asn || geo?.autonomous_system_number || null;
-  const ipType = classifyByIspAsn(isp, asn);
 
   const client = getClient();
   await client.connect();
 
   try {
-    if (!visitorId) {
-      visitorId = genVisitorId();
-    }
-
-    // log IP usage
-    try {
-      await client.query(
-        `INSERT INTO ip_log (ip, visitor_id, country, region, city, isp, asn, type) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-        [clientIp, visitorId, geo?.country_name || null, geo?.region || null, geo?.city || null, isp, asn, ipType]
-      );
-    } catch(e) {
-      // ignore log errors
-      console.error('ip_log error', e.message);
-    }
+    // registrar visitante
+    await client.query(
+      `INSERT INTO visitors(visitor_id) VALUES ($1) ON CONFLICT(visitor_id) DO NOTHING`,
+      [visitorId]
+    );
 
     const now = new Date().toISOString();
 
-    // check existing valid key for this visitor
-    const q = `SELECT token, expires_at FROM keys WHERE owner_id = $1 AND expires_at > $2 ORDER BY created_at DESC LIMIT 1`;
-    const res = await client.query(q, [visitorId, now]);
+    // tem key ativa?
+    const existing = await client.query(
+      `SELECT token, expires_at FROM keys WHERE owner_id=$1 AND expires_at > $2`,
+      [visitorId, now]
+    );
 
-    let token, expires_at;
-
-    if (res.rows.length) {
-      token = res.rows[0].token;
-      expires_at = res.rows[0].expires_at;
-    } else {
-      // rate limit by ip: count keys created from this ip in last 24h
-      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      try {
-        const cntRes = await client.query(`SELECT count(*)::int as cnt FROM keys WHERE issued_from_ip = $1 AND created_at > $2`, [clientIp, since]);
-        const cnt = cntRes.rows[0]?.cnt || 0;
-        if (cnt >= RATE_LIMIT_PER_IP_24H) {
-          await client.end();
-          return {
-            statusCode: 429,
-            body: JSON.stringify({ success: false, message: 'rate limit exceeded' })
-          };
-        }
-      } catch (e) {
-        // ignore
-      }
-
-      token = uuidv4();
-      const createdAt = new Date();
-      expires_at = new Date(createdAt.getTime() + TTL_HOURS * 60 * 60 * 1000).toISOString();
-
-      const insertQ = `INSERT INTO keys (token, owner_id, created_at, expires_at, issued_from_ip) VALUES ($1,$2,$3,$4,$5) RETURNING token, expires_at`;
-      const r = await client.query(insertQ, [token, visitorId, createdAt.toISOString(), expires_at, clientIp]);
-      token = r.rows[0].token;
-      expires_at = r.rows[0].expires_at;
+    if (existing.rows.length) {
+      return {
+        statusCode: 200,
+        headers: {
+          "Set-Cookie": `visitor_id=${signedVisitor}; Path=/; Max-Age=31536000; SameSite=Lax`,
+        },
+        body: JSON.stringify({
+          success: true,
+          key: existing.rows[0].token,
+          expires_at: existing.rows[0].expires_at,
+        }),
+      };
     }
 
-    await client.end();
+    // criar nova key
+    const token = uuidv4();
+    const expires = new Date(Date.now() + KEY_TTL_HOURS * 60 * 60 * 1000).toISOString();
 
-    const setCookie = `visitor_id=${visitorId}; Path=/; Max-Age=${60*60*24*365}; SameSite=Lax`;
+    await client.query(
+      `INSERT INTO keys (token, owner_id, created_at, expires_at, issued_from_ip)
+       VALUES ($1,$2,now(),$3,$4)`,
+      [token, visitorId, expires, clientIp]
+    );
 
     return {
       statusCode: 200,
-      headers: { 'Set-Cookie': setCookie, 'Cache-Control': 'no-store' },
-      body: JSON.stringify({ success: true, visitor_id: visitorId, key: token, expires_at })
+      headers: {
+        "Set-Cookie": `visitor_id=${signedVisitor}; Path=/; Max-Age=31536000; SameSite=Lax`,
+      },
+      body: JSON.stringify({ success: true, key: token, expires_at: expires }),
     };
   } catch (err) {
+    console.error(err);
+    return { statusCode: 500, body: JSON.stringify({ success: false }) };
+  } finally {
     await client.end();
-    return { statusCode: 500, body: JSON.stringify({ success: false, message: err.message }) };
   }
 };
