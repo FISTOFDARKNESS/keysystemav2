@@ -1,28 +1,41 @@
-const fetch = require("node-fetch");
 const crypto = require("crypto");
+const fetch = require("node-fetch");
 const secret = "qualquerCoisaAqui123";
-function ip(headers){
-  if(headers["x-nf-client-connection-ip"])return headers["x-nf-client-connection-ip"];
-  if(headers["cf-connecting-ip"])return headers["cf-connecting-ip"];
-  if(headers["x-real-ip"])return headers["x-real-ip"];
-  const x = headers["x-forwarded-for"]||headers["X-Forwarded-For"];
-  return x?x.split(",")[0].trim():null;
+
+function getClientIp(headers) {
+  if (!headers) return "0.0.0.0";
+
+  const xfwd = headers["x-forwarded-for"] || headers["X-Forwarded-For"] || null;
+  if (xfwd && typeof xfwd === "string") return xfwd.split(",")[0].trim();
+
+  return headers["client-ip"] || headers["remote-addr"] || "0.0.0.0";
 }
-async function geo(ip){
-  try{
-    const r=await fetch("https://ipapi.co/"+ip+"/json/");
-    if(!r.ok)return null;
+
+async function enrichIp(ip) {
+  try {
+    const r = await fetch("https://ipapi.co/" + ip + "/json/");
+    if (!r.ok) return null;
     return r.json();
-  }catch(e){return null;}
+  } catch (e) {
+    return null;
+  }
 }
-function sign(id){
-  const s=crypto.createHmac("sha256",secret).update(id).digest("hex");
-  return id+"."+s;
+
+function sign(id) {
+  return id + "." + crypto.createHmac("sha256", secret).update(id).digest("hex");
 }
-function verify(v){
-  if(!v.includes("."))return null;
-  const[a,b]=v.split(".");
-  const s=crypto.createHmac("sha256",secret).update(a).digest("hex");
-  return s===b?a:null;
+
+function verify(v) {
+  if (!v || !v.includes(".")) return null;
+  const [id, hash] = v.split(".");
+  const expected = crypto.createHmac("sha256", secret).update(id).digest("hex");
+  return expected === hash ? id : null;
 }
-module.exports={ip,geo,sign,verify};
+
+function classifyByIspAsn(isp, asn) {
+  if (isp && isp.toLowerCase().includes("aws")) return "datacenter";
+  if (asn && asn.toLowerCase().includes("amazon")) return "datacenter";
+  return "residential";
+}
+
+module.exports = { getClientIp, enrichIp, sign, verify, classifyByIspAsn };
