@@ -2,38 +2,26 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Acesso via Work.ink</title>
+<title>Carregando...</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-body {
-  background:#06060b;
-  color:#dff9ff;
-  font-family:Inter,Segoe UI,Arial,sans-serif;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  min-height:100vh;
-  margin:0;
-  text-align:center;
-}
-.container {
-  background:#0a0d14;
-  padding:28px;
-  border-radius:12px;
-  max-width:400px;
-}
-a {
-  color:#00d4ff;
-  text-decoration:none;
-  font-weight:700;
-}
+body{background:#06060b;color:#dff9ff;font-family:Inter,Segoe UI,Arial;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;font-size:20px}
 </style>
 </head>
 <body>
-<div class="container">
-  <h1>Acesso somente via Work.ink</h1>
-  <p>Por favor, utilize o link fornecido pelo Work.ink para acessar sua key.</p>
-  <p>Se você é o administrador, pode gerar links <a href="/generate">aqui</a>.</p>
-</div>
+Carregando key...
+<script>
+function getLocalVisitor(){return localStorage.getItem('visitor_id')||null}
+function setLocalVisitor(v){if(v)localStorage.setItem('visitor_id',v)}
+async function loadKey(){
+  const visitor=getLocalVisitor()
+  const headers=visitor?{'x-visitor-id':visitor}:{}
+  const res=await fetch("/.netlify/functions/get-or-create-key",{method:"GET",headers,credentials:"include"})
+  const j=await res.json()
+  if(j.visitor_id)setLocalVisitor(j.visitor_id)
+  if(j.key)location.href="/id/"+j.key
+}
+loadKey()
+</script>
 </body>
 </html>
