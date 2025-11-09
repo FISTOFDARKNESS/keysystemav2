@@ -5,3 +5,6 @@
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["pg", "uuid"]
+
+[functions."cleanup-expired"]
+  schedule = "0 * * * *"
