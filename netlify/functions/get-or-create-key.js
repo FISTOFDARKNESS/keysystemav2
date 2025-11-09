@@ -3,7 +3,7 @@ const { getClientIp, enrichIp, sign, verify, classifyByIspAsn } = require("./uti
 const { v4: uuidv4 } = require("uuid");
 const crypto = require("crypto");
 
-const KEY_TTL_HOURS = 00.01;
+const KEY_TTL_HOURS = 1 / 60
 const RATE_LIMIT_PER_IP_24H = 1;
 const SLUG_LETTERS = 18;
 const SIG_SECRET = "1234";
