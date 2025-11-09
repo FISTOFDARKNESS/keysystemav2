@@ -5,63 +5,14 @@
 <title>Key Panel</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-  body {
-    background:#06060b;
-    color:#dff9ff;
-    font-family:Inter,Segoe UI,Arial;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    min-height:100vh;
-    margin:0;
-  }
-  .card {
-    background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));
-    padding:28px;
-    border-radius:12px;
-    box-shadow:0 8px 40px rgba(0,200,255,0.06);
-    width:420px;
-    text-align:center;
-  }
-  h1 {
-    color:#00d4ff;
-    margin:0 0 8px;
-    font-size:20px;
-  }
-  .key {
-    font-family:Consolas,monospace;
-    font-size:18px;
-    padding:12px;
-    background:#071019;
-    border-radius:8px;
-    margin:12px 0;
-    color:#bff6ff;
-  }
-  button {
-    background:#00d4ff;
-    border:0;
-    padding:10px 16px;
-    border-radius:8px;
-    cursor:pointer;
-    color:#001;
-    font-weight:700;
-  }
-  button.secondary {
-    background:#7c34ff;
-    color:#fff;
-    margin-left:8px;
-  }
-  small {
-    color:#9fb6c9;
-    display:block;
-    margin-top:8px;
-  }
-  .row {
-    display:flex;
-    justify-content:center;
-    gap:8px;
-    align-items:center;
-  }
+body{background:#06060b;color:#dff9ff;font-family:Inter,Segoe UI,Arial;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
+.card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:28px;border-radius:12px;box-shadow:0 8px 40px rgba(0,200,255,0.06);width:420px;text-align:center}
+h1{color:#00d4ff;margin:0 0 8px;font-size:20px}
+.key{font-family:Consolas,monospace;font-size:18px;padding:12px;background:#071019;border-radius:8px;margin:12px 0;color:#bff6ff}
+button{background:#00d4ff;border:0;padding:10px 16px;border-radius:8px;cursor:pointer;color:#001;font-weight:700}
+button.secondary{background:#7c34ff;color:#fff;margin-left:8px}
+small{color:#9fb6c9;display:block;margin-top:8px}
+.row{display:flex;justify-content:center;gap:8px;align-items:center}
 </style>
 </head>
 <body>
@@ -74,46 +25,40 @@
   </div>
   <small id="info"></small>
 </div>
-
 <script>
-async function loadKey() {
-  const res = await fetch('https://keysystembeta.netlify.app/.netlify/functions/get-current-key');
-  if (!res.ok) {
-    document.getElementById('key').textContent = 'Sem key ativa';
-    return;
-  }
-  const j = await res.json();
-  document.getElementById('key').textContent = j.key;
-  document.getElementById('info').textContent = 'Expira em: ' + new Date(j.expires_at).toLocaleString();
-}
+const SITE_URL = 'https://keysystembeta.netlify.app';
+const ADMIN_SECRET = '1234';
 
-document.getElementById('get').addEventListener('click', async () => {
-  const res = await fetch('https://keysystembeta.netlify.app/.netlify/functions/create-key', {
-    method: 'POST',
-    headers: { 'x-admin-secret': '1234' }
-  });
-  const j = await res.json();
-  if (!j.success) return alert('Não foi possível gerar a key: ' + j.message);
-  document.getElementById('key').textContent = j.key;
-  document.getElementById('info').textContent = 'Expira em: ' + new Date(j.expires_at).toLocaleString();
-});
+async function loadKey() {
+  document.getElementById('info').textContent = '';
+  try {
+    const res = await fetch(`${SITE_URL}/.netlify/functions/get-current-key`);
+    if (!res.ok) {
+      document.getElementById('key').textContent = 'Sem key ativa';
+      return;
+    }
+    const j = await res.json();
+    document.getElementById('key').textContent = j.key;
+    document.getElementById('info').textContent = 'Expira em: ' + new Date(j.expires_at).toLocaleString();
+  } catch (e) {
+    document.getElementById('key').textContent = 'Erro ao carregar key';
+    console.error(e);
+  }
+}
 
 document.getElementById('refresh').addEventListener('click', loadKey);
 
 document.getElementById('get').addEventListener('click', async () => {
   try {
-    const res = await fetch(`${apiBase}/create-key`, {
+    const res = await fetch(`${SITE_URL}/.netlify/functions/create-key`, {
       method: 'POST',
-      headers: { 'x-admin-secret': 1234 }
+      headers: { 'x-admin-secret': ADMIN_SECRET }
     });
     const j = await res.json();
-    if (!j.success) {
-      alert('Não foi possível gerar a key: ' + j.message);
-      return;
-    }
+    if (!j.success) return alert('Não foi possível gerar a key: ' + j.message);
     document.getElementById('key').textContent = j.key;
     document.getElementById('info').textContent = 'Expira em: ' + new Date(j.expires_at).toLocaleString();
-  } catch(e) {
+  } catch (e) {
     alert('Erro ao gerar key');
     console.error(e);
   }
