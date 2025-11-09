@@ -29,7 +29,7 @@
 const apiBase = '/.netlify/functions';
 async function loadKey(){
   document.getElementById('info').textContent = '';
-  const res = await fetch(apiBase + '/get-current-key');
+  const res = await fetch(apiBase + '/.netlify/functions/get-current-key');
   if (!res.ok) { document.getElementById('key').textContent = 'Sem key ativa'; return; }
   const j = await res.json();
   document.getElementById('key').textContent = j.key;
