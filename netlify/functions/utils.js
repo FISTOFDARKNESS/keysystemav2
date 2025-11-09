@@ -1,6 +1,6 @@
 const crypto = require("crypto");
 const fetch = require("node-fetch");
-const secret = "1234";
+const secret = "qualquerCoisaAqui123";
 
 function getClientIp(headers) {
   if (!headers) return "0.0.0.0";
@@ -36,13 +36,4 @@ function classifyByIspAsn(isp, asn) {
   return "residential";
 }
 
-function createKeySignature(key) {
-  return crypto.createHmac("sha256", secret).update(key).digest("hex");
-}
-
-function verifyKeySignature(key, sig) {
-  const expected = createKeySignature(key);
-  return expected === sig;
-}
-
-module.exports = { getClientIp, enrichIp, sign, verify, classifyByIspAsn, createKeySignature, verifyKeySignature };
+module.exports = { getClientIp, enrichIp, sign, verify, classifyByIspAsn };
