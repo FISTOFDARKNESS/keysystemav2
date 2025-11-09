@@ -1,9 +1,12 @@
 const { getClient } = require("./_db");
 const { getClientIp, enrichIp, sign, verify, classifyByIspAsn } = require("./utils");
 const { v4: uuidv4 } = require("uuid");
+const crypto = require("crypto");
 
 const KEY_TTL_HOURS = 24;
-const RATE_LIMIT_PER_IP_24H = 5;
+const RATE_LIMIT_PER_IP_24H = 1;
+const SLUG_LETTERS = 18;
+const SIG_SECRET = "1234";
 
 function parseCookies(cookieHeader) {
   if (!cookieHeader) return {};
@@ -11,6 +14,19 @@ function parseCookies(cookieHeader) {
     const [k, v] = x.trim().split("=");
     return [k, decodeURIComponent(v)];
   }));
+}
+
+function randLetters(n){
+  const letters = 'abcdefghijklmnopqrstuvwxyz';
+  let s = '';
+  for(let i=0;i<n;i++) s += letters[Math.floor(Math.random()*letters.length)];
+  return s;
+}
+
+function makePublicSlug(token){
+  const prefix = randLetters(SLUG_LETTERS);
+  const sig = crypto.createHmac("sha256", SIG_SECRET).update(token).digest("hex");
+  return `${prefix}-src=workink&sig=${sig}`;
 }
 
 exports.handler = async function(event) {
@@ -59,25 +75,26 @@ exports.handler = async function(event) {
     }
 
     const now = new Date().toISOString();
-    const existing = await db.query("SELECT token, expires_at FROM keys WHERE owner_id=$1 AND expires_at>$2 ORDER BY created_at DESC LIMIT 1", [visitorId, now]);
+    const existing = await db.query("SELECT token, expires_at, public_slug FROM keys WHERE owner_id=$1 AND expires_at>$2 ORDER BY created_at DESC LIMIT 1", [visitorId, now]);
     if (existing.rows.length) {
       await db.end();
       return {
         statusCode: 200,
         headers: { "Set-Cookie": "visitor_id=" + visitorCookie + "; Path=/; Max-Age=31536000; SameSite=Lax" },
-        body: JSON.stringify({ success: true, visitor_id: visitorId, key: existing.rows[0].token, expires_at: existing.rows[0].expires_at })
+        body: JSON.stringify({ success: true, visitor_id: visitorId, key: existing.rows[0].token, expires_at: existing.rows[0].expires_at, public_slug: existing.rows[0].public_slug })
       };
     }
 
     const token = uuidv4();
+    const public_slug = makePublicSlug(token);
     const expiresAt = new Date(Date.now() + KEY_TTL_HOURS * 60 * 60 * 1000).toISOString();
-    await db.query("INSERT INTO keys(token, owner_id, created_at, expires_at, issued_from_ip) VALUES($1,$2,NOW(),$3,$4)", [token, visitorId, expiresAt, clientIp]);
+    await db.query("INSERT INTO keys(token, owner_id, created_at, expires_at, issued_from_ip, public_slug) VALUES($1,$2,NOW(),$3,$4,$5)", [token, visitorId, expiresAt, clientIp, public_slug]);
 
     await db.end();
     return {
       statusCode: 200,
       headers: { "Set-Cookie": "visitor_id=" + visitorCookie + "; Path=/; Max-Age=31536000; SameSite=Lax" },
-      body: JSON.stringify({ success: true, visitor_id: visitorId, key: token, expires_at: expiresAt })
+      body: JSON.stringify({ success: true, visitor_id: visitorId, key: token, expires_at: expiresAt, public_slug: public_slug })
     };
   } catch (e) {
     await db.end();
