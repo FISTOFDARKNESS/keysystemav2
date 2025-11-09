@@ -26,13 +26,11 @@ small{color:#9fb6c9;display:block;margin-top:8px}
   <small id="info"></small>
 </div>
 <script>
-const SITE_URL = 'https://keysystembeta.netlify.app';
-const ADMIN_SECRET = '1234';
 
 async function loadKey() {
   document.getElementById('info').textContent = '';
   try {
-    const res = await fetch(`${SITE_URL}/.netlify/functions/get-current-key`);
+    const res = await fetch(`https://keysystembeta.netlify.app/.netlify/functions/get-current-key`);
     if (!res.ok) {
       document.getElementById('key').textContent = 'Sem key ativa';
       return;
@@ -50,16 +48,16 @@ document.getElementById('refresh').addEventListener('click', loadKey);
 
 document.getElementById('get').addEventListener('click', async () => {
   try {
-    const res = await fetch(`${SITE_URL}/.netlify/functions/create-key`, {
+    const res = await fetch(`https://keysystembeta.netlify.app/.netlify/functions/create-key`, {
       method: 'POST',
-      headers: { 'x-admin-secret': ADMIN_SECRET }
+      headers: { 'x-admin-secret': 1234 }
     });
     const j = await res.json();
     if (!j.success) return alert('Não foi possível gerar a key: ' + j.message);
     document.getElementById('key').textContent = j.key;
     document.getElementById('info').textContent = 'Expira em: ' + new Date(j.expires_at).toLocaleString();
 
-    window.open(`${SITE_URL}/.netlify/functions/verify-workink?token=${encodeURIComponent(j.key)}`, '_blank');
+    window.open(`https://keysystembeta.netlify.app/.netlify/functions/verify-workink?token=${encodeURIComponent(j.key)}`, '_blank');
 
   } catch (e) {
     alert('Erro ao gerar key');
