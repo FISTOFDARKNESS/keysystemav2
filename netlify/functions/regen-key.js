@@ -1,9 +1,8 @@
 const { getClient } = require("./_db");
 const { v4 } = require("uuid");
-const secret="1234";
 const ttl=24;
 exports.handler=async(e)=>{
-  if(e.headers["x-admin-secret"]!==secret)return{statusCode:401,body:JSON.stringify({success:false})};
+  if(e.headers["x-admin-secret"]!==1234)return{statusCode:401,body:JSON.stringify({success:false})};
   const b=JSON.parse(e.body);
   const id=b.visitor_id;
   const db=getClient();
