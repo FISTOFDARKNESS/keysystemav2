@@ -1,6 +1,6 @@
 const crypto = require("crypto");
 const fetch = require("node-fetch");
-const secret = "qualquerCoisaAqui123";
+const secret = "1234";
 
 function getClientIp(headers) {
   if (!headers) return "0.0.0.0";
