@@ -21,21 +21,34 @@ small{color:#9fb6c9;display:block;margin-top:8px}
   <div id="key" class="key">Carregando...</div>
   <div class="row">
     <button id="refresh">Atualizar</button>
-    <button id="get" class="secondary">Get Key</button>
+    <button id="regen" class="secondary">Forçar nova key</button>
   </div>
   <small id="info"></small>
 </div>
 <script>
+const SITE_URL = window.location.origin; // assume site hospedado no mesmo domínio (Netlify)
+function setCookie(name, value, days) {
+  const d = new Date();
+  d.setTime(d.getTime() + (days*24*60*60*1000));
+  document.cookie = `${name}=${value}; path=/; expires=${d.toUTCString()}; SameSite=Lax`;
+}
+function getCookie(name) {
+  const m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return m ? m[2] : null;
+}
 
 async function loadKey() {
   document.getElementById('info').textContent = '';
   try {
-    const res = await fetch(`https://keysystembeta.netlify.app/.netlify/functions/get-current-key`);
+    const res = await fetch(`${SITE_URL}/.netlify/functions/get-or-create-key`, { credentials: 'include' });
     if (!res.ok) {
+      const txt = await res.text();
       document.getElementById('key').textContent = 'Sem key ativa';
+      console.error('get-or-create-key failed', res.status, txt);
       return;
     }
     const j = await res.json();
+    if (j.visitor_id) setCookie('visitor_id', j.visitor_id, 365);
     document.getElementById('key').textContent = j.key;
     document.getElementById('info').textContent = 'Expira em: ' + new Date(j.expires_at).toLocaleString();
   } catch (e) {
@@ -45,22 +58,21 @@ async function loadKey() {
 }
 
 document.getElementById('refresh').addEventListener('click', loadKey);
-
-document.getElementById('get').addEventListener('click', async () => {
+document.getElementById('regen').addEventListener('click', async () => {
+  const visitorId = getCookie('visitor_id');
+  if (!visitorId) return alert('Visitor ID não encontrado; atualize a página primeiro.');
   try {
-    const res = await fetch(`https://keysystembeta.netlify.app/.netlify/functions/create-key`, {
+    const res = await fetch(`${SITE_URL}/.netlify/functions/regen-key`, {
       method: 'POST',
-      headers: { 'x-admin-secret': 1234 }
+      headers: { 'Content-Type': 'application/json', 'x-admin-secret': '1234' },
+      body: JSON.stringify({ visitor_id: visitorId })
     });
     const j = await res.json();
-    if (!j.success) return alert('Não foi possível gerar a key: ' + j.message);
+    if (!j.success) return alert('Falha: ' + j.message);
     document.getElementById('key').textContent = j.key;
     document.getElementById('info').textContent = 'Expira em: ' + new Date(j.expires_at).toLocaleString();
-
-    window.open(`https://keysystembeta.netlify.app/.netlify/functions/verify-workink?token=${encodeURIComponent(j.key)}`, '_blank');
-
   } catch (e) {
-    alert('Erro ao gerar key');
+    alert('Erro ao forçar nova key');
     console.error(e);
   }
 });
