@@ -3,7 +3,7 @@ const { getClientIp, enrichIp, sign, verify, classifyByIspAsn } = require("./uti
 const { v4: uuidv4 } = require("uuid");
 
 const KEY_TTL_HOURS = 24;
-const RATE_LIMIT_PER_IP_24H = 2;
+const RATE_LIMIT_PER_IP_24H = 5;
 
 function parseCookies(cookieHeader) {
   if (!cookieHeader) return {};
@@ -65,4 +65,22 @@ exports.handler = async function(event) {
       return {
         statusCode: 200,
         headers: { "Set-Cookie": "visitor_id=" + visitorCookie + "; Path=/; Max-Age=31536000; SameSite=Lax" },
-        body: JSON.stringify({ success: true
+        body: JSON.stringify({ success: true, visitor_id: visitorId, key: existing.rows[0].token, expires_at: existing.rows[0].expires_at })
+      };
+    }
+
+    const token = uuidv4();
+    const expiresAt = new Date(Date.now() + KEY_TTL_HOURS * 60 * 60 * 1000).toISOString();
+    await db.query("INSERT INTO keys(token, owner_id, created_at, expires_at, issued_from_ip) VALUES($1,$2,NOW(),$3,$4)", [token, visitorId, expiresAt, clientIp]);
+
+    await db.end();
+    return {
+      statusCode: 200,
+      headers: { "Set-Cookie": "visitor_id=" + visitorCookie + "; Path=/; Max-Age=31536000; SameSite=Lax" },
+      body: JSON.stringify({ success: true, visitor_id: visitorId, key: token, expires_at: expiresAt })
+    };
+  } catch (e) {
+    await db.end();
+    return { statusCode: 500, body: JSON.stringify({ success: false, error: e.message }) };
+  }
+};
