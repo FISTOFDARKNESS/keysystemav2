@@ -3,7 +3,7 @@ const { getClientIp, enrichIp, sign, verify, classifyByIspAsn } = require("./uti
 const { v4: uuidv4 } = require("uuid");
 
 const KEY_TTL_HOURS = 24;
-const RATE_LIMIT_PER_IP_24H = 1;
+const RATE_LIMIT_PER_IP_24H = 5;
 
 function parseCookies(cookieHeader) {
   if (!cookieHeader) return {};
