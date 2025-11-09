@@ -1,15 +1,23 @@
 const { Client } = require("pg")
 
 exports.handler = async (event) => {
-  const key = event.queryStringParameters.key
+  let key = event.queryStringParameters?.key
+
+  if (!key && event.path) {
+    const parts = event.path.split("/id/")
+    if (parts.length > 1) key = parts[1]
+  }
+
+  if (!key) return { statusCode: 404, body: "Key não existe." }
 
   const client = new Client({
-    connectionString: "postgresql://neondb_owner:npg_RVcjEu4DI3mJ@ep-dawn-tree-ad1airj2-pooler.c-2.us-east-1.aws.neon.tech/KeySytem?sslmode=require&channel_binding=require"
+    connectionString: "postgresql://neondb_owner:npg_RVcjEu4DI3mJ@ep-dawn-tree-ad1airj2-pooler.c-2.us-east-1.aws.neon.tech/KeySytem?sslmode=require&channel_binding=require",
+    ssl: { rejectUnauthorized: false }
   })
 
   await client.connect()
 
-  const r = await client.query("SELECT token, expires_at FROM keys WHERE token=$1", [key])
+  const r = await client.query("SELECT token, expires_at FROM keys WHERE token=$1 LIMIT 1", [key])
 
   if (!r.rows.length) {
     await client.end()
