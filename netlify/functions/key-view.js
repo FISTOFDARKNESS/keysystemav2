@@ -1,10 +1,9 @@
 const { Client } = require("pg");
 
 exports.handler = async (event) => {
-  let slug = event.queryStringParameters?.key;
+  let slug = decodeURIComponent(event.queryStringParameters?.key || "");
   if (!slug && event.path) {
-    const parts = event.path.split("/id/");
-    if (parts.length > 1) slug = parts[1];
+    slug = decodeURIComponent(event.path.split("/id/")[1] || "");
   }
   if (!slug) return { statusCode: 404, body: "Key não existe." };
 
@@ -36,6 +35,28 @@ exports.handler = async (event) => {
   return {
     statusCode: 200,
     headers: { "Content-Type": "text/html" },
-    body: `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Key</title><style>body{background:#06060b;color:#dff9ff;font-family:Inter,Arial;text-align:center;padding-top:100px}.box{background:#0a0d14;padding:20px;border-radius:10px;width:320px;margin:auto}</style></head><body><div class="box"><h2>KEY VÁLIDA</h2><div style="font-family:Consolas,monospace;font-size:16px;padding:12px;background:#071019;border-radius:8px;margin:12px 0;color:#bff6ff;word-break:break-all">${row.token}</div><small style="color:#9fb6c9">Expira em: ${new Date(row.expires_at).toLocaleString()}</small></div></body></html>`
+    body: `
+      <!doctype html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>Key</title>
+        <style>
+          body{background:#06060b;color:#dff9ff;font-family:Inter,Arial;text-align:center;padding-top:100px}
+          .box{background:#0a0d14;padding:20px;border-radius:10px;width:320px;margin:auto}
+          .key{font-family:Consolas,monospace;font-size:16px;padding:12px;background:#071019;border-radius:8px;margin:12px 0;color:#bff6ff;word-break:break-all}
+          small{color:#9fb6c9}
+        </style>
+      </head>
+      <body>
+        <div class="box">
+          <h2>KEY VÁLIDA</h2>
+          <div class="key">${row.token}</div>
+          <small>Expira em: ${new Date(row.expires_at).toLocaleString()}</small>
+        </div>
+      </body>
+      </html>
+    `
   };
 };
