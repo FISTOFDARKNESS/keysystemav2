@@ -1,8 +1,8 @@
 const { getClient } = require('./_db');
 const { v4: uuidv4 } = require('uuid');
 
-const ADMIN_SECRET = process.env.CREATE_KEY_ADMIN_SECRET || null;
-const TTL_HOURS = parseInt(process.env.KEY_TTL_HOURS || '24', 10);
+const ADMIN_SECRET = 1234 || null;
+const TTL_HOURS = parseInt(24 || '24', 10);
 
 exports.handler = async function(event) {
   if (ADMIN_SECRET) {
@@ -42,8 +42,8 @@ exports.handler = async function(event) {
 const { getClient } = require('./_db');
 const { v4: uuidv4 } = require('uuid');
 
-const ADMIN_SECRET = process.env.CREATE_KEY_ADMIN_SECRET || null;
-const TTL_HOURS = parseInt(process.env.KEY_TTL_HOURS || '24', 10);
+const ADMIN_SECRET = 1234 || null;
+const TTL_HOURS = parseInt(24 || '24', 10);
 
 exports.handler = async function(event) {
   if (ADMIN_SECRET) {
