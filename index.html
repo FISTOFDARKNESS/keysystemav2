@@ -25,14 +25,14 @@ small{color:#9fb6c9;display:block;margin-top:8px}
   <small id="info"></small>
 </div>
 <script>
-const SITE_URL = window.location.origin;
 function getLocalVisitor() { return localStorage.getItem('visitor_id') || null; }
 function setLocalVisitor(v) { if (v) localStorage.setItem('visitor_id', v); }
 async function loadKey(){
   const visitor = getLocalVisitor();
   const headers = visitor ? { 'x-visitor-id': visitor } : {};
   try {
-    const res = await fetch(SITE_URL + '/.netlify/functions/get-or-create-key', { method:'GET', headers, credentials: 'include' });
+    const res = await fetch("/.netlify/functions/get-or-create-key", { method:'GET', headers, credentials: 'include' });
+    
     if (!res.ok) { document.getElementById('key').textContent = 'Sem key ativa'; return; }
     const j = await res.json();
     if (j.visitor_id) setLocalVisitor(j.visitor_id);
