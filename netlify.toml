@@ -1,6 +1,7 @@
 [build]
-  publish = "public"
   functions = "netlify/functions"
+  publish = "."
 
-[dev]
-  command = "netlify dev"
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["pg", "uuid"]
