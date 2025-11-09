@@ -1,4 +1,5 @@
 const fetch = require('node-fetch');
+const { v4: uuidv4 } = require('uuid');
 
 function getClientIp(headers) {
   if (!headers) return null;
@@ -22,11 +23,15 @@ async function enrichIp(ip) {
 
 function classifyByIspAsn(isp, asn) {
   const s = ((isp || '') + ' ' + (asn || '')).toLowerCase();
-  const datacenterKeywords = ['amazon', 'google', 'digitalocean', 'ovh', 'hetzner', 'microsoft', 'azure', 'linode', 'cloudflare', 'scaleway'];
+  const datacenterKeywords = ['amazon', 'google', 'digitalocean', 'ovh', 'hetzner', 'microsoft', 'azure', 'linode', 'cloudflare'];
   for (const k of datacenterKeywords) if (s.includes(k)) return 'datacenter';
   const mobileKeywords = ['vodafone', 'verizon', 'att', 'tmobile', 'claro', 'movistar', 'o2', 'telefonica', 'tim'];
   for (const k of mobileKeywords) if (s.includes(k)) return 'mobile';
   return 'residential';
 }
 
-module.exports = { getClientIp, enrichIp, classifyByIspAsn };
+function genVisitorId() {
+  return uuidv4();
+}
+
+module.exports = { getClientIp, enrichIp, classifyByIspAsn, genVisitorId };
