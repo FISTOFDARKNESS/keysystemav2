@@ -52,7 +52,7 @@ exports.handler = async function(event) {
     await db.query("INSERT INTO visitors(visitor_id) VALUES($1) ON CONFLICT(visitor_id) DO NOTHING", [visitorId]);
 
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const rate = await db.query("SELECT count(*)::int AS cnt FROM keys WHERE issued_to_ip=$1 AND created_at>$2", [clientIp, since]);
+    const rate = await db.query("SELECT count(*)::int AS cnt FROM keys WHERE issued_from_ip=$1 AND created_at>$2", [clientIp, since]);
     if (rate.rows[0].cnt >= RATE_LIMIT_PER_IP_24H) {
       await db.end();
       return { statusCode: 429, body: JSON.stringify({ success: false, message: "rate limit exceeded" }) };
