@@ -2,7 +2,7 @@ const { getClient } = require('./_db');
 const { getClientIp, enrichIp, classifyByIspAsn } = require('./utils');
 const { v4: uuidv4 } = require('uuid');
 
-const ADMIN_SECRET = process.env.CREATE_KEY_ADMIN_SECRET || null;
+const ADMIN_SECRET = 1234 || null;
 const TTL_HOURS = parseInt(process.env.KEY_TTL_HOURS || '24', 10);
 const RATE_LIMIT_PER_IP_24H = parseInt(process.env.RATE_LIMIT_PER_IP_24H || '3', 10);
 
