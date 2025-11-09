@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 
 const ADMIN_SECRET = '1234';
 const TTL_HOURS = 24;
-const RATE_LIMIT_PER_IP_24H = 1;
+const RATE_LIMIT_PER_IP_24H = 5;
 
 exports.handler = async function(event) {
   if (ADMIN_SECRET) {
