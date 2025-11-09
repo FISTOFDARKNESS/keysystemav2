@@ -11,18 +11,8 @@ body{background:#06060b;color:#dff9ff;font-family:Inter,Segoe UI,Arial;display:f
 <body>
 Carregando key...
 <script>
-function getLocalVisitor(){return localStorage.getItem('visitor_id')||null}
-function setLocalVisitor(v){if(v)localStorage.setItem('visitor_id',v)}
-async function loadKey(){
-  const visitor=getLocalVisitor()
-  const headers=visitor?{'x-visitor-id':visitor}:{}
-  const res=await fetch("/.netlify/functions/get-or-create-key",{method:"GET",headers,credentials:"include"})
-  if(!res.ok)return
-  const j=await res.json()
-  if(j.visitor_id)setLocalVisitor(j.visitor_id)
-  if(j.public_slug)location.href="/id/"+encodeURIComponent(j.public_slug)
-}
-loadKey()
+const testSlug = "teste123-src-workink-sig-abcdef1234567890";
+location.href = "/id/" + encodeURIComponent(testSlug);
 </script>
 </body>
 </html>
