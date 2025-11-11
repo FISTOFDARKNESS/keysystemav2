@@ -2,11 +2,12 @@ const { Client } = require("pg");
 const { verify } = require("./utils.js");
 
 exports.handler = async (event) => {
-
-  let signedSlug = decodeURIComponent(event.queryStringParameters?.key || "");
-  if (!signedSlug && event.path) {
-    signedSlug = decodeURIComponent(event.path.split("/id/")[1] || "");
+  let slug = decodeURIComponent(event.queryStringParameters?.key || "");
+  if (!slug && event.path) {
+    slug = decodeURIComponent(event.path.split("/id/")[1] || "");
   }
+  if (!slug) return { statusCode: 404, body: "get the key again in the executor." };
+
 
   const slug = verify(signedSlug);
 
