@@ -1,27 +1,84 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<title>Carregando...</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<style>
-body{background:#06060b;color:#dff9ff;font-family:Inter,Segoe UI,Arial;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;font-size:20px}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔥 Sistema de Keys - Beta</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<script>
-function getLocalVisitor(){return localStorage.getItem('visitor_id')||null}
-function setLocalVisitor(v){if(v)localStorage.setItem('visitor_id',v)}
-async function loadKey(){
-  const visitor=getLocalVisitor()
-  const headers=visitor?{'x-visitor-id':visitor}:{}
-  const res=await fetch("/.netlify/functions/get-or-create-key",{method:"GET",headers,credentials:"include"})
-  if(!res.ok)return
-  const j=await res.json()
-  if(j.visitor_id)setLocalVisitor(j.visitor_id)
-  if(j.public_slug)location.href="/id/"+encodeURIComponent(j.public_slug)
-}
-loadKey()
-</script>
+    <div class="container">
+        <h1>🚀 SISTEMA DE KEYS - BETA</h1>
+        
+        <!-- CHECKPOINT: Link para GERAR a key -->
+        <section class="checkpoint">
+            <h2>🔑 PASSO 1: Gere sua Key</h2>
+            <p>Clique no link abaixo e complete o checkpoint para receber sua key única.</p>
+            <a href="SEU_LINK_DO_WORK.INK" target="_blank" class="button">
+                ➡️ ACESSAR CHECKPOINT DO WORK.INK
+            </a>
+        </section>
+        
+        <!-- VALIDAÇÃO: Onde o usuário COLOCA a key -->
+        <section class="validation">
+            <h2>⚡ PASSO 2: Valide sua Key no Sistema</h2>
+            <p>Cole a key recebida no campo abaixo para ativar seu acesso.</p>
+            <input type="text" id="keyInput" placeholder="Cole sua key aqui...">
+            <button onclick="validateKey()" class="button">✅ VALIDAR KEY</button>
+            <p id="result"></p>
+        </section>
+        
+        <!-- INSTALAÇÃO LUAU: Instruções para o usuário final -->
+        <section class="luau-instructions">
+            <h2>🎮 PASSO 3: Use no Jogo (Luau)</h2>
+            <p>Se a key for válida, use este CÓDIGO no script do seu jogo:</p>
+            <code id="luauCode" class="code-block">
+-- Cole este código no seu script Luau<br>
+local key = "SUA_KEY_AQUI"<br>
+local function validate()<br>
+    local url = "https://keysystembeta.netlify.app/.netlify/functions/validate?key=" .. key<br>
+    -- ... (resto do código do Luau que já te passei)
+            </code>
+            <p><strong>Lembre-se:</strong> A key é de <strong>USO ÚNICO</strong>. Após validação, ela se auto-destrói.</p>
+        </section>
+    </div>
+
+    <script>
+        async function validateKey() {
+            const key = document.getElementById('keyInput').value.trim();
+            const resultElement = document.getElementById('result');
+            const luauCodeElement = document.getElementById('luauCode');
+            
+            if (!key) {
+                resultElement.innerHTML = '⚠️ Porra, coloca uma key primeiro.';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/.netlify/functions/validate?key=${encodeURIComponent(key)}`);
+                const data = await response.json();
+                
+                if (data.valid) {
+                    resultElement.innerHTML = '🎉 <strong>KEY VÁLIDA!</strong> Acesso concedido.';
+                    resultElement.style.color = '#00ff00';
+                    // Atualiza o código Luau com a key fornecida
+                    luauCodeElement.innerHTML = luauCodeElement.innerHTML.replace('SUA_KEY_AQUI', key);
+                } else {
+                    resultElement.innerHTML = '❌ <strong>KEY INVÁLIDA</strong> ou já foi usada.';
+                    resultElement.style.color = '#ff0000';
+                }
+            } catch (error) {
+                resultElement.innerHTML = '💀 <strong>ERRO:</strong> ' + error.message;
+                resultElement.style.color = '#ff6600';
+            }
+        }
+        
+        // Valida ao pressionar Enter
+        document.getElementById('keyInput').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                validateKey();
+            }
+        });
+    </script>
 </body>
 </html>
